@@ -38,12 +38,14 @@ def create_item():
 @app.route('/item', methods=['GET', 'PUT'])
 def item():
     key = request.args.get('key')
+
     if request.method == 'GET':
         item = db.items.find_one({"key": key})
         if item:
             return json_util.dumps(item), 200
         else:
             return jsonify(success=False, message="Item not found."), 404
+
     elif request.method == 'PUT':
         new_value = request.json.get('value')
         result = db.items.update_one({"key": key}, {"$set": {"value": new_value}})
