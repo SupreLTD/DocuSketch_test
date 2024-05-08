@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
 from pydantic import BaseModel, ValidationError
 from pymongo import MongoClient
-from bson import ObjectId
+from bson import json_util
+from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
 
 app = Flask(__name__)
 
 client = MongoClient("mongodb://root:example@mongo:27017/")
-db = client.test_database
+db: Database = client.test_database
+db.items.create_index("key", unique=True)
 
 
 class Item(BaseModel):
@@ -18,31 +21,35 @@ class Item(BaseModel):
 def create_item():
     try:
         item = Item(**request.json)
-        result = db.items.insert_one(item.dict())
-        return jsonify(str(result.inserted_id)), 201
-    except ValidationError as e:
-        return jsonify(error=str(e)), 400
 
-
-@app.route('/item/<id>', methods=['GET', 'PUT'])
-def get_update_item(id_):
-    if request.method == 'GET':
-        item = db.items.find_one({"_id": ObjectId(id_)})
-        if item:
-            return jsonify(item), 200
-        else:
-            return jsonify(error="Item not found"), 404
-    elif request.method == 'PUT':
         try:
-            item = Item(**request.json)
-            result = db.items.update_one({"_id": ObjectId(id_)}, {"$set": item.dict()})
-            if result.modified_count:
-                return jsonify(success=True), 200
-            else:
-                return jsonify(error="No item updated"), 404
-        except ValidationError as e:
-            return jsonify(error=str(e)), 400
+            db.items.insert_one(item.dict())
+        except DuplicateKeyError as e:
+            return jsonify(success=False, message=str(f'key <{item.key}> already exists')), 409
+
+        return jsonify(success=True, message="Item created."), 201
+
+    except ValidationError as e:
+        return jsonify(success=False, message=str(e)), 400
+
+
+@app.route('/item', methods=['GET', 'PUT'])
+def item():
+    key = request.args.get('key')
+    if request.method == 'GET':
+        item = db.items.find_one({"key": key})
+        if item:
+            return json_util.dumps(item), 200
+        else:
+            return jsonify(success=False, message="Item not found."), 404
+    elif request.method == 'PUT':
+        new_value = request.json.get('value')
+        result = db.items.update_one({"key": key}, {"$set": {"value": new_value}})
+        if result.matched_count:
+            return jsonify(success=True, message="Item updated."), 200
+        else:
+            return jsonify(success=False, message="Item not found."), 404
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
