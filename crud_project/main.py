@@ -27,7 +27,7 @@ def create_item():
         try:
             db.items.insert_one(item.dict())
         except DuplicateKeyError as e:
-            return jsonify(success=False, message=str(f'key <{item.key}> already exists')), 409
+            return jsonify(success=False, message=f'key <{item.key}> already exists'), 409
 
         return jsonify(success=True, message="Item created."), 201
 
