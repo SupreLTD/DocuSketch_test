@@ -6,8 +6,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
 
   app:
     build: .
@@ -17,6 +17,6 @@ services:
     depends_on:
       - mongo
     environment:
-      MONGO_USERNAME: root
-      MONGO_PASSWORD: example
-      MONGO_HOSTNAME: mongo
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_HOSTNAME: ${MONGO_HOSTNAME}

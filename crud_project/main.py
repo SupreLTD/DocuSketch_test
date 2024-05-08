@@ -5,9 +5,11 @@ from bson import json_util
 from pymongo.database import Database
 from pymongo.errors import DuplicateKeyError
 
+from config import settings
+
 app = Flask(__name__)
 
-client = MongoClient("mongodb://root:example@mongo:27017/")
+client = MongoClient(settings.DB_URL)
 db: Database = client.test_database
 db.items.create_index("key", unique=True)
 
